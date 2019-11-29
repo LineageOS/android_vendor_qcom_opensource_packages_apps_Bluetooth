@@ -16,11 +16,18 @@
 
 package com.android.bluetooth.btservice;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothProfile;
+import android.bluetooth.IBluetoothManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.Resources;
+import android.os.SystemProperties;
+import android.os.IBinder;
+import android.os.RemoteException;
+import android.os.ServiceManager;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.ArrayMap;
 import android.util.FeatureFlagUtils;
 import android.util.Log;
@@ -45,9 +52,9 @@ import com.android.bluetooth.pbap.BluetoothPbapService;
 import com.android.bluetooth.pbapclient.PbapClientService;
 import com.android.bluetooth.sap.SapService;
 import com.android.bluetooth.ba.BATService;
-import com.android.server.SystemConfig;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Config {
     private static final String TAG = "AdapterServiceConfig";
@@ -118,11 +125,8 @@ public class Config {
         if (resources == null) {
             return;
         }
-        SystemConfig systemConfig = SystemConfig.getInstance();
-        ArrayMap<String, Boolean> componentEnabledStates = null;
-        if (systemConfig != null) {
-            componentEnabledStates = systemConfig.getComponentsEnabledStates(ctx.getPackageName());
-        }
+        List<String> enabledProfiles =
+                getSystemConfigEnabledProfilesForPackage(ctx.getPackageName());
 
         ArrayList<Class> profiles = new ArrayList<>(PROFILE_SERVICES_AND_FLAGS.length);
         for (ProfileConfig config : PROFILE_SERVICES_AND_FLAGS) {
@@ -134,9 +138,8 @@ public class Config {
                 supported = true;
             }
 
-            if (componentEnabledStates != null
-                    && componentEnabledStates.containsKey(config.mClass.getName())) {
-                supported = componentEnabledStates.get(config.mClass.getName());
+            if (enabledProfiles != null && enabledProfiles.contains(config.mClass.getName())) {
+                supported = true;
                 Log.v(TAG, config.mClass.getSimpleName() + " Feature Flag set to " + supported
                         + " by components configuration");
             }
@@ -214,5 +217,20 @@ public class Config {
         }
         // always return true for other profiles
         return true;
+    }
+
+    private static List<String> getSystemConfigEnabledProfilesForPackage(String packageName) {
+        IBinder b = ServiceManager.getService(BluetoothAdapter.BLUETOOTH_MANAGER_SERVICE);
+        if (b == null) {
+            Log.e(TAG, "Bluetooth binder is null");
+        }
+
+        IBluetoothManager managerService = IBluetoothManager.Stub.asInterface(b);
+        try {
+            return managerService.getSystemConfigEnabledProfilesForPackage(packageName);
+        } catch (RemoteException e) {
+            return null;
+        }
+
     }
 }
