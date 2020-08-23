@@ -40,6 +40,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import android.content.res.Resources;
+import android.content.res.Resources.NotFoundException;
+
 /**
  * Provides Bluetooth AVRCP Controller profile, as a service in the Bluetooth application.
  */
@@ -206,9 +209,11 @@ public class AvrcpControllerService extends ProfileService {
             }
         }
 
+        // If we don't find a node in the tree then do not have any way to browse for the contents.
+        // Return an empty list instead.
         if (requestedNode == null) {
             if (DBG) Log.d(TAG, "Didn't find a node");
-            return null;
+            return new ArrayList(0);
         } else {
             if (!requestedNode.isCached()) {
                 if (DBG) Log.d(TAG, "node is not cached");
@@ -329,6 +334,11 @@ public class AvrcpControllerService extends ProfileService {
         StackEvent event =
                 StackEvent.connectionStateChanged(remoteControlConnected, browsingConnected);
         AvrcpControllerStateMachine stateMachine = getOrCreateStateMachine(device);
+        if (stateMachine == null) {
+            Log.e(TAG, "onConnectionStateChanged: mAvrcpCtSm is null, return");
+            return;
+        }
+
         if (remoteControlConnected || browsingConnected) {
             stateMachine.connect(event);
         } else {
@@ -343,9 +353,17 @@ public class AvrcpControllerService extends ProfileService {
         mCaPsm = caPsm;
         BluetoothDevice device = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(address);
         AvrcpControllerStateMachine stateMachine = getStateMachine(device);
-        if (stateMachine != null) {
+        if (stateMachine == null) {
+            Log.e(TAG, "getRcFeatures: AvrcpControllerStateMachine is null for device: " + device);
+            return;
+        }
+
+        try {
             stateMachine.sendMessage(
                     AvrcpControllerStateMachine.MESSAGE_PROCESS_RC_FEATURES, features, caPsm, device);
+        } catch(Exception ee) {
+            Log.i(TAG, "getRcFeatures exception occured.");
+            ee.printStackTrace();
         }
     }
 
@@ -475,9 +493,10 @@ public class AvrcpControllerService extends ProfileService {
         if (stateMachine != null) {
             PlayerApplicationSettings supportedSettings =
                     PlayerApplicationSettings.makeSupportedSettings(playerAttribRsp);
+            stateMachine.sendMessage(
+                    AvrcpControllerStateMachine.MESSAGE_PROCESS_SUPPORTED_APPLICATION_SETTINGS,
+                    supportedSettings);
         }
-        /* Do nothing */
-
     }
 
     private synchronized void onPlayerAppSettingChanged(byte[] address, byte[] playerAttribRsp,
@@ -489,10 +508,12 @@ public class AvrcpControllerService extends ProfileService {
         AvrcpControllerStateMachine stateMachine = getStateMachine(device);
         if (stateMachine != null) {
 
-            PlayerApplicationSettings desiredSettings =
+            PlayerApplicationSettings currentSettings =
                     PlayerApplicationSettings.makeSettings(playerAttribRsp);
+            stateMachine.sendMessage(
+                    AvrcpControllerStateMachine.MESSAGE_PROCESS_CURRENT_APPLICATION_SETTINGS,
+                    currentSettings);
         }
-        /* Do nothing */
     }
 
     // Browsing related JNI callbacks.
@@ -718,7 +739,10 @@ public class AvrcpControllerService extends ProfileService {
         if (stateMachine == null) {
             stateMachine = newStateMachine(device);
             mDeviceStateMap.put(device, stateMachine);
+            Log.d(TAG, "AvrcpControllerStateMachine start() called: " + device);
             stateMachine.start();
+            Log.d(TAG, "AvrcpcontrollerSM started for device: " + device);
+            stateMachine.registerReceiver(device);
         }
         return stateMachine;
     }
@@ -777,40 +801,111 @@ public class AvrcpControllerService extends ProfileService {
 
     private native void cleanupNative();
 
+    /**
+     * Send button press commands to addressed device
+     *
+     * @param keyCode  key code as defined in AVRCP specification
+     * @param keyState 0 = key pressed, 1 = key released
+     * @return command was sent
+     */
     public native boolean sendPassThroughCommandNative(byte[] address, int keyCode, int keyState);
 
+    /**
+     * Send group navigation commands
+     *
+     * @param keyCode  next/previous
+     * @param keyState state
+     * @return command was sent
+     */
     static native boolean sendGroupNavigationCommandNative(byte[] address, int keyCode,
             int keyState);
 
+    /**
+     * Change player specific settings such as shuffle
+     *
+     * @param numAttrib number of settings being sent
+     * @param attribIds list of settings to be changed
+     * @param attribVal list of settings values
+     */
     static native void setPlayerApplicationSettingValuesNative(byte[] address, byte numAttrib,
-            byte[] atttibIds, byte[] attribVal);
+            byte[] attribIds, byte[] attribVal);
 
-    /* This api is used to send response to SET_ABS_VOL_CMD */
+    /**
+     * Send response to set absolute volume
+     *
+     * @param absVol new volume
+     * @param label  label
+     */
     static native void sendAbsVolRspNative(byte[] address, int absVol, int label);
 
-    /* This api is used to inform remote for any volume level changes */
+    /**
+     * Register for any volume level changes
+     *
+     * @param rspType type of response
+     * @param absVol  current volume
+     * @param label   label
+     */
     static native void sendRegisterAbsVolRspNative(byte[] address, byte rspType, int absVol,
             int label);
 
-    /* API used to fetch the playback state */
+    /**
+     * Fetch the playback state
+     */
     static native void getPlaybackStateNative(byte[] address);
 
-    /* API used to fetch the current now playing list */
+    /**
+     * Fetch the current now playing list
+     *
+     * @param start first index to retrieve
+     * @param end   last index to retrieve
+     */
     static native void getNowPlayingListNative(byte[] address, int start, int end);
 
-    /* API used to fetch the current folder's listing */
+    /**
+     * Fetch the current folder's listing
+     *
+     * @param start first index to retrieve
+     * @param end   last index to retrieve
+     */
     static native void getFolderListNative(byte[] address, int start, int end);
 
-    /* API used to fetch the listing of players */
+    /**
+     * Fetch the listing of players
+     *
+     * @param start first index to retrieve
+     * @param end   last index to retrieve
+     */
     static native void getPlayerListNative(byte[] address, int start, int end);
 
-    /* API used to change the folder */
+    /**
+     * Change the current browsed folder
+     *
+     * @param direction up/down
+     * @param uid       folder unique id
+     */
     static native void changeFolderPathNative(byte[] address, byte direction, long uid);
 
+    /**
+     * Play item with provided uid
+     *
+     * @param scope      scope of item to played
+     * @param uid        song unique id
+     * @param uidCounter counter
+     */
     static native void playItemNative(byte[] address, byte scope, long uid, int uidCounter);
 
+    /**
+     * Set a specific player for browsing
+     *
+     * @param playerId player number
+     */
     static native void setBrowsedPlayerNative(byte[] address, int playerId);
 
+    /**
+     * Set a specific player for handling playback commands
+     *
+     * @param playerId player number
+     */
     static native void setAddressedPlayerNative(byte[] address, int playerId);
 
     /* This api is used to fetch ElementAttributes */

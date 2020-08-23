@@ -511,7 +511,7 @@ public class AdapterService extends Service {
         mAdapterStateMachine =  AdapterState.make(this);
         mJniCallbacks = new JniCallbacks(this, mAdapterProperties);
         mVendorSocket = new VendorSocket(this);
-        initNative(isGuest(), isSingleUserMode());
+        initNative(isGuest(), isNiapMode());
         mNativeAvailable = true;
         mCallbacks = new RemoteCallbackList<IBluetoothCallback>();
         mAppOps = getSystemService(AppOpsManager.class);
@@ -1788,12 +1788,6 @@ public class AdapterService extends Service {
             AdapterService service = getService();
             if (service == null) {
                 return false;
-            }
-            if ((getState() == BluetoothAdapter.STATE_BLE_ON) ||
-                (getState() == BluetoothAdapter.STATE_BLE_TURNING_ON)) {
-                service.onBrEdrDown();
-            } else {
-                service.disable();
             }
             return service.factoryReset();
         }
@@ -3600,15 +3594,7 @@ public class AdapterService extends Service {
             debugLog(action);
             if (action == null) return;
             if (isEnabled() && (action.equals(WifiManager.NETWORK_STATE_CHANGED_ACTION))) {
-                 WifiManager wifiMgr = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-                 if ((wifiMgr != null) && (wifiMgr.isWifiEnabled())) {
-                     WifiInfo wifiInfo = wifiMgr.getConnectionInfo();
-                     if ((wifiInfo != null) && (wifiInfo.getNetworkId() != -1)) {
-                         mVendor.setWifiState(true);
-                     } else {
-                         mVendor.setWifiState(false);
-                     }
-                 }
+                fetchWifiState();
              } else if (isEnabled() &&
                         (action.equals(WifiManager.WIFI_STATE_CHANGED_ACTION) ||
                         (action.equals(WifiManager.WIFI_AP_STATE_CHANGED_ACTION)))){
@@ -3625,8 +3611,8 @@ public class AdapterService extends Service {
         return UserManager.get(this).isGuestUser();
     }
 
-    private boolean isSingleUserMode() {
-        return UserManager.get(this).hasUserRestriction(UserManager.DISALLOW_ADD_USER);
+    private boolean isNiapMode() {
+        return Settings.Global.getInt(getContentResolver(), "niap_mode", 0) == 1;
     }
 
     /**
@@ -3662,7 +3648,7 @@ public class AdapterService extends Service {
 
     static native void classInitNative();
 
-    native boolean initNative(boolean startRestricted, boolean isSingleUserMode);
+    native boolean initNative(boolean startRestricted, boolean isNiapMode);
 
     native void cleanupNative();
 

@@ -159,7 +159,6 @@ final class A2dpStateMachine extends StateMachine {
 
             if (mLastConnectionState != -1) {
                 // Don't broadcast during startup
-                broadcastConnectionState(mConnectionState, mLastConnectionState);
                 if (mIsPlaying) {
                     Log.i(TAG, "Disconnected: stopped playing: " + mDevice);
                     mIsPlaying = false;
@@ -167,6 +166,7 @@ final class A2dpStateMachine extends StateMachine {
                     broadcastAudioState(BluetoothA2dp.STATE_NOT_PLAYING,
                                         BluetoothA2dp.STATE_PLAYING);
                 }
+                broadcastConnectionState(mConnectionState, mLastConnectionState);
                 AdapterService adapterService = AdapterService.getAdapterService();
                 if (adapterService.isVendorIntfEnabled() &&
                      adapterService.isTwsPlusDevice(mDevice)) {
@@ -572,6 +572,7 @@ final class A2dpStateMachine extends StateMachine {
 
         // in Connected state
         private void processAudioStateEvent(int state) {
+            Log.i(TAG, "Connected: processAudioStateEvent: state: " + state + " mIsPlaying: " + mIsPlaying);
             switch (state) {
                 case A2dpStackEvent.AUDIO_STATE_STARTED:
                     synchronized (this) {
