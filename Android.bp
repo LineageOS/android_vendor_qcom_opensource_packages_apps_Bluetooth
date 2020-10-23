@@ -32,6 +32,7 @@ java_library {
 
 android_app {
     name: "Bluetooth",
+    defaults: ["platform_app_defaults"],
 
     defaults: ["btadva_java_defaults"],
     srcs: [
