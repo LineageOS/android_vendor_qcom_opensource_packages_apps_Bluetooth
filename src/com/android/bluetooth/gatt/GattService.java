@@ -264,11 +264,10 @@ public class GattService extends ProfileService {
         int rssi;
         int periodicAdvInt;
         byte[] advData;
-        String originalAddress;
 
         public AdvertisingReport(int eventType, int addressType, String address, int primaryPhy,
             int secondaryPhy, int advertisingSid, int txPower, int rssi, int periodicAdvInt,
-            byte[] advData, String originalAddress) {
+            byte[] advData) {
             this.eventType = eventType;
             this.addressType = addressType;
             this.address = address;
@@ -279,7 +278,6 @@ public class GattService extends ProfileService {
             this.rssi = rssi;
             this.periodicAdvInt = periodicAdvInt;
             this.advData = advData;
-            this.originalAddress = originalAddress;
         }
     };
 
@@ -403,8 +401,7 @@ public class GattService extends ProfileService {
                             }
                             for (String test : TEST_MODE_BEACONS) {
                                 onScanResultInternal(0x1b, 0x1, "DD:34:02:05:5C:4D", 1, 0, 0xff,
-                                        127, -54, 0x0, HexDump.hexStringToByteArray(test),
-                                        "DD:34:02:05:5C:4E");
+                                        127, -54, 0x0, HexDump.hexStringToByteArray(test));
                             }
                             sendEmptyMessageDelayed(0, DateUtils.SECOND_IN_MILLIS);
                         }
@@ -1225,23 +1222,22 @@ public class GattService extends ProfileService {
 
     void HandleScanResult(int eventType, int addressType, String address, int primaryPhy,
             int secondaryPhy, int advertisingSid, int txPower, int rssi, int periodicAdvInt,
-            byte[] advData, String originalAddress) {
+            byte[] advData) {
         // When in testing mode, ignore all real-world events
         if (isTestModeEnabled()) return;
         onScanResultInternal(eventType, addressType, address, primaryPhy, secondaryPhy,
-                advertisingSid, txPower, rssi, periodicAdvInt, advData, originalAddress);
+                advertisingSid, txPower, rssi, periodicAdvInt, advData);
     }
 
     void onScanResultInternal(int eventType, int addressType, String address, int primaryPhy,
             int secondaryPhy, int advertisingSid, int txPower, int rssi, int periodicAdvInt,
-            byte[] advData, String originalAddress) {
+            byte[] advData) {
         if (VDBG) {
             Log.d(TAG, "onScanResultInternal() - eventType=0x" + Integer.toHexString(eventType)
                     + ", addressType=" + addressType + ", address=" + address + ", primaryPhy="
                     + primaryPhy + ", secondaryPhy=" + secondaryPhy + ", advertisingSid=0x"
                     + Integer.toHexString(advertisingSid) + ", txPower=" + txPower + ", rssi="
-                    + rssi + ", periodicAdvInt=0x" + Integer.toHexString(periodicAdvInt)
-                    + ", originalAddress=" + originalAddress);
+                    + rssi + ", periodicAdvInt=0x" + Integer.toHexString(periodicAdvInt));
         }
 
         byte[] legacyAdvData = Arrays.copyOfRange(advData, 0, 62);
@@ -1375,8 +1371,7 @@ public class GattService extends ProfileService {
                                      advReport.address, advReport.primaryPhy,
                                      advReport.secondaryPhy, advReport.advertisingSid,
                                      advReport.txPower, advReport.rssi,
-                                     advReport.periodicAdvInt, advReport.advData,
-                                     advReport.originalAddress);
+                                     advReport.periodicAdvInt, advReport.advData);
                 }
             }
         }
@@ -1384,14 +1379,13 @@ public class GattService extends ProfileService {
 
     void onScanResult(int eventType, int addressType, String address, int primaryPhy,
             int secondaryPhy, int advertisingSid, int txPower, int rssi, int periodicAdvInt,
-            byte[] advData, String originalAddress) {
+            byte[] advData) {
         if (VDBG) {
             Log.d(TAG, "onScanResult() - eventType=0x" + Integer.toHexString(eventType)
                     + ", addressType=" + addressType + ", address=" + address + ", primaryPhy="
                     + primaryPhy + ", secondaryPhy=" + secondaryPhy + ", advertisingSid=0x"
                     + Integer.toHexString(advertisingSid) + ", txPower=" + txPower + ", rssi="
-                    + rssi + ", periodicAdvInt=0x" + Integer.toHexString(periodicAdvInt)
-                    + ", originalAddress=" + originalAddress);
+                    + rssi + ", periodicAdvInt=0x" + Integer.toHexString(periodicAdvInt));
         }
         // When in testing mode, ignore all real-world events
         if (isTestModeEnabled()) {
@@ -1404,7 +1398,7 @@ public class GattService extends ProfileService {
 
         AdvertisingReport advReport = new AdvertisingReport(eventType, addressType, address,
                            primaryPhy, secondaryPhy, advertisingSid, txPower, rssi,
-                           periodicAdvInt, advData, originalAddress);
+                           periodicAdvInt, advData);
         Message message = new Message();
         message.what = ScanResultHandler.MSG_BLE_ADVERTISING_REPORT;
         message.obj = advReport;
