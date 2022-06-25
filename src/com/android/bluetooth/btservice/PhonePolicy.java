@@ -41,6 +41,7 @@ import com.android.bluetooth.a2dp.A2dpService;
 import com.android.bluetooth.a2dpsink.A2dpSinkService;
 import com.android.bluetooth.apm.ApmConstIntf;
 import com.android.bluetooth.apm.MediaAudioIntf;
+import com.android.bluetooth.apm.CallAudioIntf;
 import com.android.bluetooth.btservice.InteropUtil;
 import com.android.bluetooth.btservice.storage.DatabaseManager;
 import com.android.bluetooth.hearingaid.HearingAidService;
@@ -338,7 +339,7 @@ class PhonePolicy {
             ParcelUuid.fromString("00006AD5-0000-1000-8000-00805F9B34FB");
 
         ParcelUuid ADV_AUDIO_G_MEDIA =
-            ParcelUuid.fromString("00006AD3-0000-1000-8000-00805F9B34FB");
+            ParcelUuid.fromString("12994B7E-6d47-4215-8C9E-AAE9A1095BA3");
 
         ParcelUuid ADV_AUDIO_W_MEDIA =
             ParcelUuid.fromString("2587db3c-ce70-4fc9-935f-777ab4188fd7");
@@ -932,7 +933,12 @@ class PhonePolicy {
                      (hsService.getConnectionPolicy(device) >= BluetoothProfile.CONNECTION_POLICY_ALLOWED)) {
                     debugLog("Retrying connection to HS with device " + device);
                     mHeadsetRetrySet.add(device);
-                    hsService.connect(device);
+                    if (ApmConstIntf.getLeAudioEnabled()) {
+                        CallAudioIntf mCallAudio = CallAudioIntf.get();
+                        mCallAudio.connect(device);
+                    } else {
+                        hsService.connect(device);
+                    }
                 } else {
                     debugLog("do not initiate connect as A2dp is not connected");
                 }
@@ -962,8 +968,12 @@ class PhonePolicy {
                     (a2dpService.getConnectionPolicy(device) >= BluetoothProfile.CONNECTION_POLICY_ALLOWED)) {
                     debugLog("Retrying connection to A2DP with device " + device);
                     mA2dpRetrySet.add(device);
-                    a2dpService.connect(device);
-                } else {
+                    if (ApmConstIntf.getLeAudioEnabled()) {
+                        MediaAudioIntf mMediaAudio = MediaAudioIntf.get();
+                        mMediaAudio.connect(device);
+                    } else {
+                        a2dpService.connect(device);
+                    }
                     debugLog("do not initiate connect as HFP is not connected");
                 }
             }

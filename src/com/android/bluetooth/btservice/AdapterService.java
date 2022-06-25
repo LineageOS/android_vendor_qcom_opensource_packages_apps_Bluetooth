@@ -174,6 +174,7 @@ import android.net.wifi.WifiManager;
 import android.net.NetworkInfo;
 import android.os.ParcelUuid;
 import android.net.wifi.SoftApConfiguration;
+import android.net.wifi.SupplicantState;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -410,10 +411,11 @@ public class AdapterService extends Service {
         WifiManager wifiMgr = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         if ((wifiMgr != null) && (wifiMgr.isWifiEnabled())) {
             WifiInfo wifiInfo = wifiMgr.getConnectionInfo();
-            if((wifiInfo != null) && (wifiInfo.getNetworkId() != -1)) {
+            if((wifiInfo != null) && (wifiInfo.getSupplicantState() == SupplicantState.COMPLETED)) {
                 isWifiConnected = true;
             }
         }
+        Log.w(TAG,"fetchWifiState - isWifiConnected =" + isWifiConnected);
         mVendor.setWifiState(isWifiConnected);
     }
 
@@ -1157,7 +1159,7 @@ public class AdapterService extends Service {
             ParcelUuid.fromString("00006AD5-0000-1000-8000-00805F9B34FB");
 
         ParcelUuid ADV_AUDIO_G_MEDIA =
-            ParcelUuid.fromString("00006AD3-0000-1000-8000-00805F9B34FB");
+            ParcelUuid.fromString("12994B7E-6d47-4215-8C9E-AAE9A1095BA3");
 
         ParcelUuid ADV_AUDIO_W_MEDIA =
             ParcelUuid.fromString("2587db3c-ce70-4fc9-935f-777ab4188fd7");
