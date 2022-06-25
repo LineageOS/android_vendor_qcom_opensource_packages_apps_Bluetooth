@@ -312,6 +312,9 @@ public class ActiveDeviceManager {
                         setHearingAidActiveDevice(null);
                     }
                     // Just assign locally the new value
+                    if (DBG) {
+                        Log.d(TAG, "set mA2dpActiveDevice to " + device);
+                    }
                     mA2dpActiveDevice = device;
                 }
                 break;
@@ -395,6 +398,9 @@ public class ActiveDeviceManager {
                     }
                     if (device != null && !Objects.equals(mHfpActiveDevice, device)) {
                         setHearingAidActiveDevice(null);
+                    }
+                    if (DBG) {
+                        Log.d(TAG, "set mHfpActiveDevice to " + device);
                     }
                     // Just assign locally the new value
                     mHfpActiveDevice = device;
@@ -658,7 +664,9 @@ public class ActiveDeviceManager {
         }
     }
     public void onDeviceConnStateChange(BluetoothDevice device, int state, int prevState, int audioType) {
-        if(audioType == ApmConstIntf.AudioFeatures.CALL_AUDIO && state == BluetoothProfile.STATE_DISCONNECTED) {
+        Log.d(TAG, "onDeviceConnStateChange: device: " + device + " state: " + state
+                + " prevState: " + prevState + " audioType: " + audioType);
+        if(audioType == ApmConstIntf.AudioFeatures.CALL_AUDIO && prevState == BluetoothProfile.STATE_CONNECTED) {
             Intent intent = new Intent(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED);
             intent.putExtra(BluetoothProfile.EXTRA_PREVIOUS_STATE, prevState);
             intent.putExtra(BluetoothProfile.EXTRA_STATE, state);

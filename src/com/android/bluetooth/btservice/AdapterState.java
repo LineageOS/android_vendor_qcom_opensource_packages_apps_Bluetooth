@@ -91,8 +91,8 @@ final class AdapterState extends StateMachine {
     static final int BLE_START_XMEM_TIMEOUT_DELAY = 23000;
 
     static final int BLE_STOP_TIMEOUT_DELAY = 1000;
-    static final int BREDR_START_TIMEOUT_DELAY = 4000;
-    static final int BREDR_STOP_TIMEOUT_DELAY = 4000;
+    static final int BREDR_START_TIMEOUT_DELAY = 8000;
+    static final int BREDR_STOP_TIMEOUT_DELAY = 8000;
     static final int BREDR_CLEANUP_TIMEOUT_DELAY = 2000;
     static final int STACK_DISABLE_TIMEOUT_DELAY = 8000;
     static final int BT_FORCEKILL_TIMEOUT_DELAY = 100;
