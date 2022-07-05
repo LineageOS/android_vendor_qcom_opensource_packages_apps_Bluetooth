@@ -13,44 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* Changes from Qualcomm Innovation Center are provided under the following license:
- *
- * Copyright (c) 2021 Qualcomm Innovation Center, Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted (subject to the limitations in the
- * disclaimer below) provided that the following conditions are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
- *
- *     * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
- * GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
- * HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
- */
 
 package com.android.bluetooth.telephony;
-
-import static android.Manifest.permission.BLUETOOTH_CONNECT;
 
 import android.annotation.RequiresPermission;
 import android.bluetooth.BluetoothAdapter;
@@ -67,7 +31,6 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.Bundle;
-import android.os.UserHandle;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
 import android.telecom.Connection;
@@ -83,8 +46,6 @@ import android.util.Log;
 
 import com.android.bluetooth.hfp.BluetoothHeadsetProxy;
 import com.android.bluetooth.hfp.HeadsetService;
-import com.android.bluetooth.apm.ApmConstIntf;
-
 
 import androidx.annotation.VisibleForTesting;
 import com.android.internal.telephony.PhoneConstants;
@@ -150,15 +111,6 @@ public class BluetoothInCallService extends InCallService {
     private Semaphore mDisconnectionToneSemaphore = new Semaphore(0);
     private int mAudioMode = AudioManager.MODE_INVALID;
     private final Object mAudioModeLock = new Object();
-
-    public static final String ACTION_DSDA_CALL_STATE_CHANGE =
-            "android.bluetooth.dsda.action.DSDA_CALL_STATE_CHANGED";
-
-    public static final int ANSWER_CALL = 1;
-    public static final int HANGUP_CALL = 2;
-    public static final int PROCESS_CHLD= 3;
-    public static final int HELD_CALL   = 4;
-    public static final int LIST_CLCC   = 5;
 
     @VisibleForTesting
     public AudioManager mAudioManager;
@@ -417,15 +369,7 @@ public class BluetoothInCallService extends InCallService {
     }
 
     @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE)
-    public boolean answerCall(int profile) {
-        Log.d(TAG, "answer received");
-        if (ApmConstIntf.AudioProfiles.HFP == profile) {
-            Log.d(TAG, "answercall: hfp");
-            Intent DsdaIntent = new Intent(ACTION_DSDA_CALL_STATE_CHANGE);
-            DsdaIntent.putExtra("state", ANSWER_CALL);
-            sendBroadcastAsUser(DsdaIntent, UserHandle.ALL, BLUETOOTH_CONNECT);
-            return true;
-        }
+    public boolean answerCall() {
         synchronized (LOCK) {
             enforceModifyPermission();
             Log.i(TAG, "BT - answering call");
@@ -439,14 +383,7 @@ public class BluetoothInCallService extends InCallService {
     }
 
     @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE)
-    public boolean hangupCall(int profile) {
-        if (ApmConstIntf.AudioProfiles.HFP == profile) {
-            Log.d(TAG, "hangup call: hfp");
-            Intent DsdaIntent = new Intent(ACTION_DSDA_CALL_STATE_CHANGE);
-            DsdaIntent.putExtra("state", HANGUP_CALL);
-            sendBroadcastAsUser(DsdaIntent, UserHandle.ALL, BLUETOOTH_CONNECT);
-            return true;
-        }
+    public boolean hangupCall() {
         synchronized (LOCK) {
             enforceModifyPermission();
             Log.i(TAG, "BT - hanging up call");
@@ -570,15 +507,7 @@ public class BluetoothInCallService extends InCallService {
     }
 
     @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE)
-    public boolean listCurrentCalls(int profile) {
-        if (ApmConstIntf.AudioProfiles.HFP == profile) {
-            Log.d(TAG, "listCurrentCalls: hfp");
-            Intent DsdaIntent = new Intent(ACTION_DSDA_CALL_STATE_CHANGE);
-            DsdaIntent.putExtra("state", LIST_CLCC);
-            sendBroadcastAsUser(DsdaIntent, UserHandle.ALL, BLUETOOTH_CONNECT);
-            return true;
-        }
-
+    public boolean listCurrentCalls() {
         synchronized (LOCK) {
             enforceModifyPermission();
             // only log if it is after we recently updated the headset state or else it can
@@ -653,15 +582,7 @@ public class BluetoothInCallService extends InCallService {
     }
 
     @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE)
-    public boolean processChld(int chld, int profile) {
-        if (ApmConstIntf.AudioProfiles.HFP == profile) {
-            Log.d(TAG, "processChld: hfp");
-            Intent DsdaIntent = new Intent(ACTION_DSDA_CALL_STATE_CHANGE);
-            DsdaIntent.putExtra("state", PROCESS_CHLD);
-            DsdaIntent.putExtra("chld", chld);
-            sendBroadcastAsUser(DsdaIntent, UserHandle.ALL, BLUETOOTH_CONNECT);
-            return true;
-        }
+    public boolean processChld(int chld) {
         synchronized (LOCK) {
             enforceModifyPermission();
             long token = Binder.clearCallingIdentity();
