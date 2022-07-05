@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b8576534_7a2d2150",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 29415
+      },
+      "writtenOn": "2022-07-05T04:12:53Z",
+      "side": 1,
+      "message": "Reverted due to reliance on proprietary QSSI app",
+      "revId": "b0ed1364d7d17b0ccafc805021ecfcc305bd0704",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    }
+  ]
+}
