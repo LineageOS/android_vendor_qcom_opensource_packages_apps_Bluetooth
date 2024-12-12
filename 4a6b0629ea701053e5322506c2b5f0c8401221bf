@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "752c690f_0a8f509d",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 33479
+      },
+      "writtenOn": "2024-12-12T18:53:10Z",
+      "side": 1,
+      "message": "vendor/qcom/opensource/commonsys/packages/apps/Bluetooth/src/com/android/bluetooth/hid/HidHostService.java:187: error: cannot find symbol\n                            int connectionPolicy \u003d getConnectionPolicy(device);\n                                                   ^\n  symbol: method getConnectionPolicy(BluetoothDevice)\n1 error\n02:46:06 ninja failed with: exit status 1\n\n\nstill getting compilation error atleast one left",
+      "revId": "4a6b0629ea701053e5322506c2b5f0c8401221bf",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    }
+  ]
+}
